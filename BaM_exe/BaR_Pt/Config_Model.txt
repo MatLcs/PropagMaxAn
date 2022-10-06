@@ -1,0 +1,28 @@
+"BaRatinBAC" ! Model ID
+1 ! nX: number of input variables
+1 ! nY: number of output variables
+6 ! nPar: number of parameters theta
+"b1" ! Parameter name
+-4.01291221332628,0.501260618414982 ! Initial guess
+"Gaussian" ! Prior distribution
+-4.01291221332628,0.501260618414982 ! Prior parameters
+"a1" ! Parameter name
+4.84867666183806,0.357472553309183 ! Initial guess
+"LogNormal" ! Prior distribution
+4.84867666183806,0.357472553309183 ! Prior parameters
+"c1" ! Parameter name
+1.66653371680739,0.0246515247281274 ! Initial guess
+"Gaussian" ! Prior distribution
+1.66653371680739,0.0246515247281274 ! Prior parameters
+"b2" ! Parameter name
+2.01150428230527,0.51944566386855 ! Initial guess
+"Gaussian" ! Prior distribution
+2.01150428230527,0.51944566386855 ! Prior parameters
+"a2" ! Parameter name
+5.48291590726946,0.254218078222464 ! Initial guess
+"LogNormal" ! Prior distribution
+5.48291590726946,0.254218078222464 ! Prior parameters
+"c2" ! Parameter name
+1.66648539815259,0.0244262297174035 ! Initial guess
+"Gaussian" ! Prior distribution
+1.66648539815259,0.0244262297174035 ! Prior parameters

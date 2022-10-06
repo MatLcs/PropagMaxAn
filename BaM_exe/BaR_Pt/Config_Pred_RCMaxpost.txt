@@ -1,0 +1,12 @@
+'BaR_Pt/Hgrid.txt'
+1601
+1
+.false.
+.false.
+-1
+'Qrc_Maxpost.spag'
+.true.
+.true.
+'Qrc_Maxpost.env'
+.false.
+.false.
