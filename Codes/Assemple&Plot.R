@@ -101,7 +101,8 @@ IC_Amax = ggplot()+
   geom_ribbon(data = Quants[which(Quants$an >= 1967 & Quants$an <= 1971),], aes(x = an, 
                          ymin = tot2.5, ymax= tot97.5, fill = "4 - Reconstructed") )+
   geom_line(data = Quants, aes(x = an, y = mp))+
-  geom_vline(xintercept = year(Tshifts),show.legend = T, linetype = 2)+
+  geom_point(aes(x = 1816 : 2020,y = 2000,size = Njau),color='blue',alpha = 0.5)+
+  geom_vline(xintercept = year(Tshifts),show.legend = T, linetype = 2, size = 0.8, color = "lightgrey")+
   theme(legend.position = "right")+#,legend.text = element_text(size=8))+
   scale_fill_manual(name = element_blank(),
                     values = c("#fec44f","#fa9fb5","#f03b20","grey"))+
@@ -109,7 +110,9 @@ IC_Amax = ggplot()+
          ,axis.title=element_text(size=14)
          ,legend.text=element_text(size=15)
          ,legend.title=element_text(size=15)
-         ,legend.key.size=unit(1, "cm"))
+         ,legend.key.size=unit(1, "cm"))+
+  scale_size_continuous(range = c(3, 15),name="Gaugings / year")+
+  coord_cartesian(ylim=c(2000,16000))
 
 pdf(paste0(dir.plots,"IC_AMAX_Both.pdf"),14)
   print(IC_Amax)
@@ -145,5 +148,35 @@ dev.off()
   
   length(which(pet <0.05))/500
   length(which(mann <0.05))/500
- 
+
+  plot(x = Quants$an, y = Quants$mp,type='l')
+  lines(x = 1816:1886, y = rep( mean(Quants$mp[which(Quants$an <= 1886)]),
+                                length(Quants$mp[which(Quants$an <= 1886)] ) ) )   
+  lines(x = 1887:2020, y = rep( mean(Quants$mp[which(Quants$an > 1886)]),
+                                length(Quants$mp[which(Quants$an > 1886)] ) ) )   
   
+  # Quants$mp[1:70] = Quants$mp[1:70]-600
+  
+  pettitt.test(Quants$mp[41:70])
+  mean(Quants$mp[1:41])
+  mean(Quants$mp[41:70])
+  
+  bard = read.table("C://Users/mathieu.lucas/Desktop/MaxAnBard.txt",header = T)[,c(1,3)]
+  bard$Date = dmy(bard$Date)
+  bard$y = year(bard$Date)
+  plot(x=1816:2016, y = bard$Valeur - Quants$mp[1:201], ylim = c(-2000,2000), ylab = "Q_Bard - Q_Mathieu [m3/s]")
+  abline(v = year(Tshifts), col = "grey", lty = 2)
+  
+  mk.test(bard$Valeur)
+  mk.test(Quants$mp)        
+  pettitt.test(bard$Valeur)
+  pettitt.test(Quants$mp)  
+  
+  plot(x=1816:2016, 
+       y = ((bard$Valeur - Quants$mp[1:201])/Quants$mp[1:201])*100,# ylim = c(-2000,2000), 
+       ylab = "(Q_Bard - Q_Mathieu)/Q_Mathieu * 100 [%]")
+  abline(v = year(Tshifts), col = "grey", lty = 2)
+  
+  
+
+    

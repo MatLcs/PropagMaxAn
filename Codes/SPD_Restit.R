@@ -37,7 +37,7 @@ Gau$Period = as.numeric(Gau$Period)
 ######### PRIORS DEFINITION ##########
 ######################################
 # 1. Define number of controls, periods and MonteCarlo samples
-ncontrol = 3; nsim = 1000 ; RunSPD = T ; nspag = ncol(Noisy)
+ncontrol = 3; nsim = 1000 ; RunSPD = F ; nspag = ncol(Noisy)
 # 2. Define which parameters are varying in parameterization 
 isVar=c(T,F,F,T,F,F,F,F,F)
 # 3. Define parameter names and prior distributions for b,a,c (of any control)
@@ -341,7 +341,7 @@ IC=ggplot(DataRC)+
   theme(axis.text=element_text(size=15),axis.title=element_text(size=20,face="plain")
         ,panel.grid.major=element_line(size=1.2),panel.grid.minor=element_line(size=0.8)
         ,legend.text=element_text(size=15),legend.title=element_text(size=20)
-        ,legend.key.size=unit(1.5, "cm"),legend.position="right")+
+        ,legend.key.size=unit(1.5, "cm"),legend.position="none")+
   ylab("Relative uncertainty [%]")+
   xlab("Stage [m]")
 
@@ -350,7 +350,7 @@ ggarrange(plot.RC+
             coord_cartesian(ylim=ylim.wind,xlim=xlim.wind)+
             theme(axis.title.x = element_blank()),
           IC,
-          ncol = 1,align = "v",common.legend = T, legend = "none",# "right",
+          ncol = 1,align = "v",common.legend = T,legend = "right",
           heights = c(2,1))
 ggsave(filename = "RClog_ICdown.pdf",path = paste0(dir.plot.case,"SPD/"), width = 12, height = 7)
 
@@ -729,7 +729,7 @@ IC_Amax = ggplot()+
          ,legend.key.size=unit(1, "cm"))
 
 
-pdf(paste0(dir.plots,"/",case,"/IC_AMAX.pdf"),14)
+pdf(paste0(dir.plots,"/",case,"/IC_AMAX.pdf"),10)
   print(IC_Amax)
 dev.off()
 

@@ -592,7 +592,7 @@ dir.bar = paste0(dir.bam,"BaR_",case)
     ### REAL MAXPOST ???? 1 spag MP limni x 1 spag MP CT & fun
     ### maxpost limni = median h
     if(length(AmaxP)>1){TrueMp[bufferAn] = approx(x = Hgrid, y = DatasRC[[period]]$maxpost, 
-                              xout = apply(MatSpag,MARGIN = 1, median)    )$y
+                              xout = apply(MatSpag,MARGIN = 1, median) )$y
     } else {TrueMp[bufferAn] = approx(x = Hgrid, y = DatasRC[[period]]$maxpost,
                                       xout = median(MatSpag)    )$y}
     
@@ -683,7 +683,7 @@ dir.bar = paste0(dir.bam,"BaR_",case)
            ,legend.key.size=unit(1, "cm"))
     
   
-  pdf(paste0(dir.plots,"/",case,"/IC_AMAX.pdf"),14)
+  pdf(paste0(dir.plots,"/",case,"/IC_AMAX.pdf"),10)
     print(IC_Amax)
   dev.off()
   

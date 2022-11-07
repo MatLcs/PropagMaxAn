@@ -114,7 +114,9 @@ years = 1816:1967
 NoisyLimni = matrix(ncol = nspag, nrow = length(years))
 HmaxA = data.frame(y = years,Date = as.Date("1900-01-01"), H = NA)
 countrec = 1
-syst = rnorm(1,0,1)*(0.068/1.96)
+
+## datum reference error init delta4
+d4_pt = rnorm(1,0,1)*(0.068/1.96)
 
 for(i in 1 : nrow(NoisyLimni) ){
   
@@ -125,10 +127,10 @@ for(i in 1 : nrow(NoisyLimni) ){
   ## annuaire hydrologique 1873
   } else {Hmax = 5.7; Dmax = as.Date("1873-03-19")}
 
-  ## draw a new syst err : recalage
+  ## draw a new datum reference err each 25 years
   if(countrec == 25){
     countrec = 1
-    syst = rnorm(1,0,1)*(0.068/1.96)  }
+    d4_pt = rnorm(1,0,1)*(0.068/1.96)  }
   
   HmaxA$H[i] = Hmax
   HmaxA$Date[i] = Dmax
@@ -136,28 +138,32 @@ for(i in 1 : nrow(NoisyLimni) ){
   ##### before 1841
   if(years[i] < 1841){
     NoisyLimni[i,] = Hmax  +
-      ## frequence releves (non-syst)
+      ## measurement frequency err delta5 1/d
       rexp(n = nspag, rate = lamb1)  +
-      ## batillage (syst)
-      syst
+      ## gauge reading error delta 1
+      rnorm(nspag,0, 0.10/1.96) +
+      ## datum reference error
+      d4_pt
     
   ##### after 1841
   } else {
     #### < 5m
-    if(LimniPt$H[i] < 5){
+    if(Hmax < 5){
       NoisyLimni[i,] = Hmax  +
-        ## frequence releves (non-syst)
+        ## measurement frequency err delta5 3/d
         rexp(n = nspag, rate = lamb3)  +
-        ## batillage (syst)
-        syst
+        ## gauge reading error delta 1
+        rnorm(nspag,0, 0.10/1.96) +
+        ## datum reference error
+        d4_pt
       
       #### > 5m
     } else {
       NoisyLimni[i,] = Hmax +
-        ## frequence releves (non-syst)
-        rnorm(nspag,0,1)*(0.1/1.96) +
-        ## batillage (syst)
-        syst
+        ## gauge reading error delta 1
+        rnorm(nspag,0,1)*(0.10/1.96) +
+        ## datum reference error
+        d4_pt
     }
   }
   countrec = countrec+1
@@ -173,11 +179,11 @@ NoisyLimni[which(HmaxA$y == 1856),] = HmaxA$H[which(HmaxA$y == 1856)] + rnorm(ns
 NoisyLimni[which(HmaxA$y == 1841),] = HmaxA$H[which(HmaxA$y == 1841)] + rnorm(nspag,0,0.94/1.96)
 
 ## Condition C4 flood Pichard before 1841
-for(i in 1 : (1841-1816) ){
-    if ( HmaxA$H[i] < 7 & any(NoisyLimni[i,] > 7) ){
-      NoisyLimni[i,which(NoisyLimni[i,] > 7)] = 7
-    }
-}
+# for(i in 1 : (1841-1816) ){
+#     if ( HmaxA$H[i] < 7 & any(NoisyLimni[i,] > 7) ){
+#       NoisyLimni[i,which(NoisyLimni[i,] > 7)] = 7
+#     }
+# }
 
 ### Quantiles
 HmaxA$min = round(apply(NoisyLimni,MARGIN = 1,quantile,probs = 0.025),2)
@@ -233,7 +239,6 @@ IC_perc = ggplot()+
 
 # IC_perc
 
-
 ggarrange(IC_an,IC_perc,ncol = 1,align = "hv")
 # ggsave(path = dir.plots, filename = "StageErrorAMAX_bcr.pdf",width = 10, height = 8)
 
@@ -243,16 +248,16 @@ NoisyRestit = matrix(ncol = nspag, nrow = nrow(MaxARestit))
 
 for(i in 1:nrow(NoisyRestit)){
   NoisyRestit[i,] = MaxARestit$h[i] +
-    #non-syst 
-    rnorm(nspag,0,1)*(0.05/1.96) + 
-    #syst, recalage every 6 month, new draw every year
-    rnorm(1,0,1)*(0.035)}
+    ## sensor precision
+    rnorm(nspag,0, 0.02/1.96)+
+    #calibration every 6 month, new draw every year
+    rnorm(nspag,0, 0.12/1.96) }
 
-NoisyRestit = round(NoisyRestit,2)
+# NoisyRestit = round(NoisyRestit,2)
 
 HmaxA_Res = MaxARestit[,c(1,3,2)]
-HmaxA_Res$min = round(apply(NoisyRestit,MARGIN = 1,quantile,probs = 0.025),2)
-HmaxA_Res$max = round(apply(NoisyRestit,MARGIN = 1,quantile,probs = 0.975),2)
+HmaxA_Res$min = round(apply(NoisyRestit,MARGIN = 1,quantile,probs = 0.025),3)
+HmaxA_Res$max = round(apply(NoisyRestit,MARGIN = 1,quantile,probs = 0.975),3)
 HmaxA_Res$med = round(apply(NoisyRestit,MARGIN = 1,median),2)
 names(HmaxA_Res) = c("y","Date","H","min","max","med")
 
@@ -303,7 +308,7 @@ IC_an_both = ggplot()+
          ,legend.key.size=unit(1, "cm"))+
   geom_vline(aes(xintercept=1841), lwd = 1, lty = 2)+
   geom_vline(aes(xintercept=c(1968,1969,1970)), lwd = 4, col = "lightgrey")+
-  geom_line(data=data.frame(x=1816:1841,y=7),aes(x=x,y=y))+
+  # geom_line(data=data.frame(x=1816:1841,y=7),aes(x=x,y=y))+
   geom_line(data=data.frame(x=1841:1967,y=5),aes(x=x,y=y))
 #coord_cartesian(ylim = c(2.5,10.5))  
 
@@ -343,3 +348,17 @@ write.table(HmaxA_Res[,(1:6)], paste0(dir.limni,"amaxH_Res.txt"),row.names = F)
 
 write.table(NoisyLimni,paste0(dir.limni,"NoisyHmaxAn_Pt.txt"), row.names = F, col.names = F)
 write.table(NoisyRestit,paste0(dir.limni,"NoisyHmaxAn_Res.txt"), row.names = F, col.names = F)
+
+
+### width IC
+
+bef40 = which(BothMax$y<1841)
+aft40 = which(BothMax$y>=1841 & BothMax$y <= 1967)
+res = which(BothMax$y > 1970)
+
+mean(BothMax$max[bef40] - BothMax$min[bef40])
+
+mean(BothMax$max[aft40] - BothMax$min[aft40])
+
+mean(BothMax$max[res] - BothMax$min[res])
+

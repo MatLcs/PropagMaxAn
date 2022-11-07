@@ -31,6 +31,8 @@ dir.create(dir.plots.gev,showWarnings = F)
   #### Initializing results list
   QuantAll = list()
   FreqAll = list()
+  FormHyd = list()
+  FormTot = list()
   #### Initializing plots list
   GgGeV = list()
   GgU = list()
@@ -67,7 +69,7 @@ dir.create(dir.plots.gev,showWarnings = F)
       STooDs(mod,workspace = dir.spag, mcmcOptions = mcmc(Nsim = nsim, Nslim = 2))
       #### Read MCMC results for each spag
       MCMCres = readMCMC(file = file.path(dir.spag,"mcmc.txt"), burnFactor = 0.5, slimFactor = 2)
-      #### Hydrometric uncertainty : Maxpost GeV for the i'th hydro spag
+      #### Streamflow uncertainty : Maxpost GeV for the i'th hydro spag
       MegaSpagHyd = rbind(MegaSpagHyd, MCMCres[which.max(MCMCres$post),(1:3)])
       #### Total uncertainty : Nspag GeV for the i'th hydro spag
       MegaSpagTot = rbind(MegaSpagTot, MCMCres[,(1:3)])
@@ -81,6 +83,9 @@ dir.create(dir.plots.gev,showWarnings = F)
         scale = MegaSpagHyd$Ech[i],shape = -1*MegaSpagHyd$Form[i]) }
     for ( i in 1 : nrow(MegaSpagTot)) {MegaGevTot[i,] = qgev(p = prob,loc = MegaSpagTot$Pos[i],
         scale = MegaSpagTot$Ech[i], shape = -1*MegaSpagTot$Form[i]) }
+    #### Stock the form parameters
+    FormHyd[[case]] = MegaSpagHyd$Form
+    FormTot[[case]] = MegaSpagTot$Form
     #### Compute the true maxpost quantiles : maxpost of hydro sample x maxpost of GeV estim
     dat <- dataset(Y = data.frame(Q = Mp.case))
     mod <- model(dataset=dat, parentDist ='GEV', par=Param)
@@ -102,9 +107,9 @@ dir.create(dir.plots.gev,showWarnings = F)
     
     QuantBoth = ggplot()+
       geom_ribbon(data=Quants,aes(x=Pr, ymin = Qtot_2, ymax=Qtot_9,
-                                  fill="Total uncertainty : \n Hydrometric + sampling"),alpha=0.8)+
+                                  fill="2-Total uncertainty : \n Streamflow + sampling"),alpha=0.8)+
       geom_ribbon(data=Quants,aes(x=Pr, ymin = Qhyd_2, ymax=Qhyd_9, 
-                                  fill="Hydrometric uncertainty"),alpha=1)+
+                                  fill="1-Streamflow uncertainty"),alpha=1)+
       geom_line(data=Quants,aes(x=Pr,y=Mp,col="Maxpost"))+
       geom_point(data = Freq, aes(x=Pr, y = mp))+
       geom_errorbar(data=Freq, aes(x=Pr,ymin = tot2.5, ymax = tot97.5))+
@@ -118,16 +123,17 @@ dir.create(dir.plots.gev,showWarnings = F)
       labs(title = paste0(head(Q.case$an,1)," - ",tail(Q.case$an,1)))+
       coord_cartesian(xlim=c(1,1000))+
       theme(legend.title=element_blank(),
-            plot.title = element_text(hjust = 0.01, vjust = -7))  
+            plot.title = element_text(hjust = 0.01, vjust = -7),
+            legend.position = c(0.8,0.2))  
     
     # QuantBoth
     ggsave(paste0(dir.plots.gev,"/GeV_",nyears[case],"years.pdf"),
            device = "pdf", width = 10,height = 6,units = "in")
     
     QuantICs2 = ggplot()+
-      geom_ribbon(data=Quants,aes(x=Pr, ymin = 0, ymax = 100, fill = "Sampling U") )+
+      geom_ribbon(data=Quants,aes(x=Pr, ymin = 0, ymax = 100, fill = "2-Sampling U") )+
       geom_ribbon(data=Quants,aes(x=Pr, ymin = 0, 
-                                  ymax = ((Qhyd_9-Qhyd_2)/(Qtot_9-Qtot_2))*100, fill = "Hydrometric U" ))+
+                                  ymax = ((Qhyd_9-Qhyd_2)/(Qtot_9-Qtot_2))*100, fill = "1-Streamflow U" ))+
       scale_x_continuous(trans="log10")+
       xlab("Return period [years]")+
       ylab("Percentage of total uncertainty [%]")+
@@ -177,9 +183,9 @@ dir.create(dir.plots.gev,showWarnings = F)
     QuantGG = rbind(QuantGG, data.frame(QuantAll[[case]],case = nyears[case]))
     
     QuantICs2 = ggplot()+
-      geom_ribbon(data=data.frame(QuantAll[[case]]),aes(x=Pr, ymin = 0, ymax = 100, fill = "Sampling U") )+
+      geom_ribbon(data=data.frame(QuantAll[[case]]),aes(x=Pr, ymin = 0, ymax = 100, fill = "2-Sampling U") )+
       geom_ribbon(data=data.frame(QuantAll[[case]]),aes(x=Pr, ymin = 0, 
-                                  ymax = ((Qhyd_9-Qhyd_2)/(Qtot_9-Qtot_2))*100, fill = "Hydrometric U" ))+
+                                  ymax = ((Qhyd_9-Qhyd_2)/(Qtot_9-Qtot_2))*100, fill = "1-Streamflow U" ))+
       scale_x_continuous(trans="log10")+
       xlab("Return period [years]")+
       ylab("Percentage of total uncertainty [%]")+
@@ -264,7 +270,64 @@ dir.create(dir.plots.gev,showWarnings = F)
   ggsave(paste0(dir.plots.gev,"/BarplotQuantiles4cases.pdf"),device = "pdf", width = 14,height = 8,units = "in")
   
   
+  #### PLOT FORM PARAMS
+  require(ggridges)
+ 
+  Ggforms=list()
+ 
+   for(i in 1:4){
+
+    Ggforms[[i]] = ggplot(data = data.frame( tot = sample(FormTot[[i]],length(FormHyd[[i]])),
+                                             hyd = FormHyd[[i]], case = i ) )+
+      geom_density(aes(x=tot, fill = "2-Total uncertainty"),alpha = 0.8)+
+      geom_density(aes(x=hyd, fill = "1-Streamflow uncertainty"),alpha = 0.8)+
+      scale_fill_manual(values = c("#fec44f","#67a9cf"))+
+      xlab("")+
+      theme_light()+
+      theme(legend.position = c(0.25,0.8), legend.title = element_blank())+
+      ggtitle(paste0(nyears[[i]]," years"))+
+      coord_cartesian(xlim = c(-0.3,0.3),ylim = c(0,40))
+    
+  }
+  ggarrange(Ggforms[[1]]+theme(legend.position="none"),
+            Ggforms[[2]]+theme(axis.title.y = element_blank()),
+            Ggforms[[3]]+theme(legend.position="none"),
+            Ggforms[[4]]+theme(axis.title.y = element_blank(),legend.position="none"),
+              align = "hv", ncol = 2, nrow=2)
   
+  ggsave(path = dir.plots.gev, filename = "FormParam_4cases.pdf", width = 10, height = 8, units = "in")
   
+  #### ridges try
+  
+  Hyd = data.frame(t(matrix(unlist(FormHyd), nrow=length(FormHyd), byrow=TRUE)))
+  names(Hyd) = nyears
+  Hyd = melt(Hyd)
+  Hyd$type = "1-Streamflow uncertainty"
+  
+  Tot = data.frame(t(matrix(unlist(FormTot), nrow=length(FormTot), byrow=TRUE)))
+  names(Tot) = nyears
+  # Tot = Tot[sample(1:nrow(Tot),500,F),]
+  Tot = melt(Tot)
+  Tot$type = "2-Streamflow + sampling uncertainty"
+  
+  Forms = rbind(Hyd,Tot)
+  Forms$variable = as.factor(Forms$variable)
+  
+  ggplot(Forms, aes(y = variable,
+                    x = value,
+                    fill = type)) +
+    scale_fill_manual(values = c("#fec44f","#67a9cf"))+
+    geom_density_ridges(alpha=0.7)+
+    scale_x_continuous(expand = c(0, 0))+
+    scale_y_discrete(expand = c(0, 0)) +
+    coord_cartesian(xlim = c(-0.3,0.4))+
+    ylab("Sample size [years]")+
+    theme_light()+
+    theme(legend.position = c(0.2,0.9), legend.title = element_blank(),
+          axis.title.x = element_blank())
+
+  ggsave(path = dir.plots.gev, filename = "Form_4cases_ridgeline.pdf", width = 8, height = 6, units = "in")
+    
+beepr::beep()
   
   
