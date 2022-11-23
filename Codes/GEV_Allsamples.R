@@ -19,8 +19,8 @@ QuantHydro = read.table(paste0(dir.res,"Quantiles_Amax.txt"),header=T)
 ######### MODEL PREPARATION ##########
 ######################################
 #### 205 cases of sample size
-nyears = seq(20, length(QuantHydro$an), 1)#c(20 : length(QuantHydro$an))
-nspag = 300#dim(SpagsHydro)[2] 
+nyears = seq(20, length(QuantHydro$an), 2)#c(20 : length(QuantHydro$an))
+nspag = 200#dim(SpagsHydro)[2] 
 nsim = 4000
 #### SToods parameters, common GEV priors to all cases
 Pos <- parameter(name='Pos',init = 6000) 

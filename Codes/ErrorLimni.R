@@ -213,8 +213,8 @@ IC_an = ggplot()+
          ,legend.text=element_text(size=15)
          ,legend.title=element_text(size=15)
          ,legend.key.size=unit(1, "cm"))+
-  geom_line(data=HmaxA, aes(x=y, y = 5 ),col="red",lwd=1,lty=2)  +
-  geom_vline(aes(xintercept=1841),col="grey" ,lty=2,lwd = 1)+
+  geom_line(data=HmaxA, aes(x=y, y = 5 ),col="lightgrey",lwd=1,lty=2)  +
+  # geom_vline(aes(xintercept=1841),col="grey" ,lty=2,lwd = 1)+
   coord_cartesian(ylim = c(2.5,10.5))  
   
 # IC_an
@@ -234,7 +234,7 @@ IC_perc = ggplot()+
          ,legend.text=element_text(size=15)
          ,legend.title=element_text(size=15)
          ,legend.key.size=unit(1, "cm"))  +
-  geom_vline(aes(xintercept=1841),lwd=1, lty =2 , col="grey")
+  # geom_vline(aes(xintercept=1841),lwd=1, lty =2 , col="grey")
   # coord_cartesian(ylim = c(2,10))  
 
 # IC_perc
@@ -297,19 +297,19 @@ IC_an_both = ggplot()+
   geom_ribbon(data = BothMax,
               aes(x = y, ymin = min, ymax=max,fill= st))+
   geom_line(data = BothMax, aes(x = y, y = H, color = st),lwd=0.7)+
-  scale_color_manual(values = c("red","blue"))+
+  scale_color_manual(values = c("black","black"))+
   # scale_fill_manual(values = ("deepskyblue"))+
   # geom_line(data = HmaxA, aes(x = y, y = med),lwd=1,col="red")+
   theme(legend.position = "NULL")+
   theme( axis.text=element_text(size=12)
-         ,axis.title=element_text(size=14)
+         ,axis.title=element_text(size=18)
          ,legend.text=element_text(size=15)
-         ,legend.title=element_text(size=15)
+         ,legend.title=element_text(size=18)
          ,legend.key.size=unit(1, "cm"))+
   geom_vline(aes(xintercept=1841), lwd = 1, lty = 2)+
-  geom_vline(aes(xintercept=c(1968,1969,1970)), lwd = 4, col = "lightgrey")+
+  geom_vline(aes(xintercept=c(1968,1969,1970)), lwd = 4, col = "lightgrey")
   # geom_line(data=data.frame(x=1816:1841,y=7),aes(x=x,y=y))+
-  geom_line(data=data.frame(x=1841:1967,y=5),aes(x=x,y=y))
+  # geom_line(data=data.frame(x=1841:1967,y=5),aes(x=x,y=y))
 #coord_cartesian(ylim = c(2.5,10.5))  
 
 # IC_an_both
@@ -322,12 +322,12 @@ IC_rel_both = ggplot()+
               aes(x = y, ymin = min-H, ymax=max-H, fill = st))+
   geom_line(data = BothMax, aes(x = y, y = 0), lwd=1)+
   geom_line(data = BothMax, aes(x = y, y = med-H, color = st),lwd=1)+
-  scale_color_manual(values=c("red","blue"))+
+  scale_color_manual(values=c("red","red"))+
   theme(legend.position = "NULL")+
   theme( axis.text=element_text(size=12)
-         ,axis.title=element_text(size=14)
+         ,axis.title=element_text(size=18)
          ,legend.text=element_text(size=15)
-         ,legend.title=element_text(size=15)
+         ,legend.title=element_text(size=18)
          ,legend.key.size=unit(1, "cm"))  +
   geom_vline(aes(xintercept=1841), lwd = 1, lty = 2)+
   geom_vline(aes(xintercept=c(1968,1969,1970)), lwd = 4, col = "lightgrey")
@@ -335,8 +335,11 @@ IC_rel_both = ggplot()+
 
 # IC_rel_both
 
-ggarrange(IC_an_both,IC_rel_both,ncol = 1,align = "hv")
-ggsave(path = dir.plots, filename = "StageErrorAMAX_BOTH.pdf",width = 10, height = 8)
+ggarrange(IC_an_both+
+            theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x.bottom = element_blank()),
+          IC_rel_both+theme(axis.text.x = element_text(size=18), axis.title.x = element_text(size=18))
+          ,ncol = 1,align = "v")
+ggsave(path = dir.plots, filename = "StageErrorAMAX_BOTH.pdf",width = 15, height = 10)
 
 ### Save
 dir.create(paste0(dir.res,"Limni/"))
