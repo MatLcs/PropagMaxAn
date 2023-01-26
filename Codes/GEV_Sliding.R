@@ -1,0 +1,245 @@
+##################################################################
+### COMPARE IC's tot & sampling on 50, 100, 150, 200 years samples
+##################################################################
+rm(list=ls())
+dev.off()
+source("C://Users/mathieu.lucas/Desktop/GitMat/PropagMaxAn/Codes/dirs.R")
+source(paste0(dir.codes,"module_BaRatin.r"))
+source(paste0(dir.codes,"Fun_SPD.r"))
+### dir for plots
+dir.plots.gev = paste0(dir.plots,"/GeV_sliding")
+dir.create(dir.plots.gev,showWarnings = F)
+
+plot.only = F
+
+######################################
+############ DATA LOADING ############
+######################################
+SpagsHydro = read.table(paste0(dir.res,"spags_uTot_Amax.txt"))
+QuantHydro = read.table(paste0(dir.res,"Quantiles_Amax.txt"),header=T)
+######################################
+######### MODEL PREPARATION ##########
+######################################
+
+#### sliding sample of size 100 years
+nyears =  rep(100, (tail(QuantHydro$an,1)-100)-QuantHydro$an[1])
+nspag = 300 #dim(SpagsHydro)[2] 
+nsim = 3000
+#### SToods parameters, common GEV priors to all cases
+Pos <- parameter(name='Pos',init = 6000) 
+Ech =  parameter(name='Ech',init = 1000) 
+Form = parameter(name='Form',init = 0,priorDist='Gaussian',priorPar=c(0,0.2))
+Param = list(Pos,Ech,Form)
+#### Quantiles extracted up to Q1000 & return period associated
+prob = c(0.99,0.999) ; Pr = c(100,1000)#1/(1-prob)
+#### Initializing results list
+QuantAll = data.frame()
+#### Initializing plots list
+GgGeV = list()
+GgU = list()
+#### Creating results folder
+dir.res.stoods = paste0(dir.res,"/GeV_Amax_Slidingsamples")
+dir.create(dir.res.stoods,showWarnings = F)
+######################################
+######### MODEL PREPARATION ##########
+######################################
+if(plot.only==F){
+  for(case in 1: length(nyears)){
+    # case = 1
+    message("***************************************************************")
+    message(paste0("Case = ",case))
+    message("***************************************************************")
+    #### Creating case folder
+    dir.case = paste0(dir.res.stoods,"/dircase")
+    dir.create(dir.case,showWarnings = F)
+    #### Maxpost for case years
+    Mp.case = QuantHydro$mp[case:(case+100)] #tail(QuantHydro$mp,nyears[case])
+    Q.case = QuantHydro[case:(case+100),]#tail(QuantHydro,nyears[case])
+    #### Spags for case years
+    Spag.case = SpagsHydro[case:(case+100),]#tail(SpagsHydro,nyears[case])
+    #### Initializing DF for MCMC results
+    MegaSpagTot = data.frame()
+    MegaSpagHyd = data.frame()
+    ######### ESTIMATING GEV PARAMETERS FOR EACH HYDRO SPAG ##########
+    for(spag in sample(1:500,nspag)){
+      print(paste0("Spag = ",spag))
+      #### GEV model definition
+      dat <- dataset(Y=data.frame(Q=Spag.case[,spag]))
+      mod <- model(dataset=dat, parentDist ='GEV', par=Param)
+      #### Create 1 sub-folder per hydro spag 
+      dir.spag = file.path(dir.case,"Spag")#paste0("Spag",i)) 
+      dir.create(dir.spag,showWarnings = F)
+      STooDs(mod,workspace = dir.spag, mcmcOptions = mcmc(Nsim = nsim, Nslim = 2))
+      #### Read MCMC results for each spag
+      MCMCres = readMCMC(file = file.path(dir.spag,"mcmc.txt"), burnFactor = 0.5, slimFactor = 2)
+      #### Streamflow uncertainty : Maxpost GeV for the i'th hydro spag
+      MegaSpagHyd = rbind(MegaSpagHyd, MCMCres[which.max(MCMCres$post),(1:3)])
+      #### Total uncertainty : Nspag GeV for the i'th hydro spag
+      MegaSpagTot = rbind(MegaSpagTot, MCMCres[,(1:3)])
+    }
+    #### Create matrix to stock N spags quantiles
+    MegaGevHyd = matrix(nrow = nrow(MegaSpagHyd),ncol = length(prob))
+    MegaGevTot = matrix(nrow = nrow(MegaSpagTot),ncol = length(prob))
+    #### Compute the quantiles for all the GeV realisations spags
+    #### WARNING, HERE SHAPE HAS TO BE THE OPPOSITE THE SHAPE GIVEN BY STOODS (BY CONVENTION)
+    for ( i in 1 : nrow(MegaSpagHyd)) {MegaGevHyd[i,] = qgev(p = prob,loc = MegaSpagHyd$Pos[i],
+                                                             scale = MegaSpagHyd$Ech[i],
+                                                             shape = -1*MegaSpagHyd$Form[i]) }
+    for ( i in 1 : nrow(MegaSpagTot)) {MegaGevTot[i,] = qgev(p = prob,loc = MegaSpagTot$Pos[i],
+                                                             scale = MegaSpagTot$Ech[i],
+                                                             shape = -1*MegaSpagTot$Form[i]) }
+    #### Compute the true maxpost quantiles : maxpost of hydro sample x maxpost of GeV estim
+    dat <- dataset(Y = data.frame(Q = Mp.case))
+    mod <- model(dataset=dat, parentDist ='GEV', par=Param)
+    #### Create MP sub-folder & run Stoods
+    dir.mp = file.path(dir.case,"/Mp") ; dir.create(dir.mp,showWarnings = F)
+    STooDs(mod,workspace = dir.mp, mcmcOptions = mcmc(Nsim = nsim, Nslim = 2))
+    MCMCres = readMCMC(file = file.path(dir.spag,"mcmc.txt"), burnFactor = 0.5, slimFactor = 1)
+    Mp.GeV = MCMCres[which.max(MCMCres$post),(1:3)]
+    Mp.Quant = qgev(p = prob,loc = Mp.GeV$Pos, scale = Mp.GeV$Ech,shape = -1*Mp.GeV$Form)
+    quanthyd = apply(MegaGevHyd,MARGIN = 2,FUN = quantile, probs = c(0.025,0.975))
+    quanttot = apply(MegaGevTot,MARGIN = 2,FUN = quantile, probs = c(0.025,0.975))
+    
+    ## floods PR
+    # Freq = Q.case[order(Q.case$mp),]
+    # Freq$Fr = (seq(1:length(Q.case$an))-0.5)/length(Q.case$an)
+    # Freq$Pr = 1/(1-Freq$Fr)
+    
+    Quants = data.frame(Pr=Pr, Mp=Mp.Quant, Qhyd_2=quanthyd[1,] ,Qhyd_9=quanthyd[2,],
+                        Qtot_2=quanttot[1,],Qtot_9=quanttot[2,],start = Q.case$an[1])
+    
+    QuantAll = rbind(QuantAll,Quants)
+    
+  }
+  
+  
+  
+  # QuantAll$Pr = rep(c(100,1000),53)
+  
+  # Quant1000 = QuantAll[which(QuantAll$Pr == 1000),]
+  
+  # GGQ1000 = ggplot(QuantAll[which(QuantAll$Pr == 1000),])+
+  #   geom_ribbon(aes(x=nyears, ymin=0, ymax = Qtot_9 - Qtot_2, fill = "1-Total unc."))+
+  #   geom_ribbon(aes(x=nyears, ymin=0, ymax = Qhyd_9 - Qhyd_2, fill = "2-Streamflow unc."))+
+  #   geom_line(aes(x=nyears, y = Mp, color = "1000-year flood maxpost value"),lwd=1)+
+  #   xlab("Sample size [years]")+
+  #   ylab("95% confidence interval width [m3/s]")+
+  #   scale_fill_manual(name = element_blank(),
+  #                     values = c("#67a9cf","#fec44f"))+
+  #   theme_bw(base_size=15)+
+  #   labs(title="1000-year flood")+
+  #   theme(legend.title = element_blank())
+  # 
+  # GGQ1000
+  # ggsave(filename = "WidthQ1000.pdf",path = dir.plots.gev,width = 10, height = 7)
+  # 
+  # GGQ100 = ggplot(QuantAll[which(QuantAll$Pr == 100),])+
+  #   geom_ribbon(aes(x=nyears, ymin=0, ymax = Qtot_9 - Qtot_2, fill = "1-Total unc."))+
+  #   geom_ribbon(aes(x=nyears, ymin=0, ymax = Qhyd_9 - Qhyd_2, fill = "2-Streamflow unc."))+
+  #   geom_line(aes(x=nyears, y = Mp, color = "1000-year flood maxpost value"),lwd=1)+
+  #   xlab("Sample size [years]")+
+  #   ylab("95% confidence interval width [m3/s]")+
+  #   scale_fill_manual(name = element_blank(),
+  #                     values = c("#67a9cf","#fec44f"))+
+  #   theme_bw(base_size=15)+
+  #   labs(title="100-year flood")+
+  #   theme(legend.title = element_blank())
+  # 
+  # 
+  # GGQ100
+  # ggsave(filename = "WidthQ100.pdf",path = dir.plots.gev,width = 10, height = 7)
+  # 
+  
+  write.table(round(QuantAll,3),file = paste0(dir.res,"QuantWidth.txt"),row.names = F)
+}
+
+
+####### PLOTS ONLY
+
+
+
+QuantAll = read.table(paste0(dir.res,"QuantWidth.txt"), header = T)
+
+QuantAll$nyears = rep(1816:1919, each = 2)
+names(QuantAll) = c("Pr"  ,   "Mp"  ,   "Qhyd_2", "Qhyd_9" ,"Qtot_2", "Qtot_9", "start")
+
+## add Q1000 from 205year sample
+Quant205 = read.table(paste0(dir.res,"GeV_Amax/205y/Quants4.txt"))[c(981,990),]
+names(Quant205) = c("Pr"  ,   "Mp"  ,   "Qhyd_2", "Qhyd_9" ,"Qtot_2", "Qtot_9")
+
+GGQ1000 = ggplot(QuantAll[which(QuantAll$Pr == 1000),])+
+  geom_ribbon(aes(x=start, ymin=Qtot_9, ymax =  Qtot_2, fill = "3-Total unc."))+
+  geom_ribbon(aes(x=start, ymin=Qhyd_9, ymax =  Qhyd_2, fill = "4-Streamflow unc."))+
+  geom_line(aes(x=start, y = Mp, color = "1-maxpost"),lwd=1)+
+  geom_line(aes(x = start, y = Quant205$Mp[which(round(Quant205$Pr,2)==1000)],
+                color = "2-Q1000 and total unc. \n from full sample"), lwd=1)+
+  geom_line(aes(x = start, y = Quant205$Qtot_2[which(round(Quant205$Pr,2)==1000)],
+                color = "2-Q1000 and total unc. \n from full sample"), lwd=1, lty= 2)+
+  geom_line(aes(x = start, y = Quant205$Qtot_9[which(round(Quant205$Pr,2)==1000)],
+                color = "2-Q1000 and total unc. \n from full sample"), lwd=1, lty = 2)+
+  xlab("Starting year")+
+  ylab("Discharge [m3/s]")+
+  scale_fill_manual(name = element_blank(),
+                    values = c("#67a9cf","#fec44f"))+
+  scale_color_manual(name = element_blank(),
+                     values = c("#F8766D","#bdbdbd"))+
+  theme_bw(base_size=15)+
+  labs(title="1000-year flood \n 100 years sliding samples")+
+  theme(legend.title = element_blank(),
+        legend.position = c(0.85,0.84),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=25),
+        legend.text=element_text(size=20),
+        plot.title = element_text(hjust = 0.2, vjust = -12,size = 22))+
+  scale_y_log10()
+  # coord_cartesian(ylim=c(10000,48000))+
+  # scale_y_log10()
+
+GGQ1000
+
+ggsave(filename = "SlidingQ1000.pdf",path = dir.plots.gev,width = 14, height = 9)
+
+
+GGQ100 = ggplot(QuantAll[which(QuantAll$Pr == 100),])+
+  geom_ribbon(aes(x=start, ymin=Qtot_9, ymax =  Qtot_2, fill = "1-Total unc."))+
+  geom_ribbon(aes(x=start, ymin=Qhyd_9, ymax =  Qhyd_2, fill = "2-Streamflow unc."))+
+  geom_line(aes(x=start, y = Mp, color = "maxpost"),lwd=1)+
+  xlab("Starting year")+
+  ylab("Discharge [m3/s]")+
+  scale_fill_manual(name = element_blank(),
+                    values = c("#67a9cf","#fec44f"))+
+  theme_bw(base_size=15)+
+  labs(title="100-year flood - 100 years samples")+
+  theme(legend.title = element_blank(),
+        legend.position = c(0.82,0.85),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=25),
+        legend.text=element_text(size=25),
+        plot.title = element_text(hjust = 0.5, vjust = -8,size = 25))
+
+GGQ100
+
+# ggsave(filename = "Q100SSize.pdf",path = dir.plots.gev,width = 12, height = 8)
+
+IC1000 = ggplot(QuantAll[which(QuantAll$Pr == 1000),])+
+  geom_line(aes(x=start, y = ((Qtot_9-Qtot_2)/Qtot_2)*100, color = "1-Total unc."),size = 1.5)+
+  geom_line(aes(x=start, y = ((Qhyd_9-Qhyd_2)/Qtot_2)*100, color = "2-Streamflow unc."),size = 1.5)+
+  scale_color_manual(name = element_blank(),
+                    values = c("#67a9cf","#fec44f"))+
+  theme_bw(base_size=15)+
+  labs(title="1000-year flood - 100 years samples")+
+  theme(legend.title = element_blank(),
+        legend.position = c(0.82,0.85),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=25),
+        legend.text=element_text(size=20),#(size=25),
+        plot.title = element_text(hjust = 0.5, vjust = -8,size = 25))+
+  ylab("Confindence interval width [%]")+
+  xlab("Starting year")
+
+IC1000
+
+
+
+
+

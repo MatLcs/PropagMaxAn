@@ -5,7 +5,7 @@ source(paste0(dir.codes,"module_BaRatin.r"))
 source(paste0(dir.codes,"Fun_SPD.r"))
 
 start.time = Sys.time()
-case = "Res"
+case = "Res-Loc_sdb1"
 dir.spd = paste0(dir.bam,"SPD_",case)
 dir.bar = paste0(dir.bam,"BaR_",case)
 
@@ -37,7 +37,7 @@ Gau$Period = as.numeric(Gau$Period)
 ######### PRIORS DEFINITION ##########
 ######################################
 # 1. Define number of controls, periods and MonteCarlo samples
-ncontrol = 3; nsim = 1000 ; RunSPD = F ; nspag = ncol(Noisy)
+ncontrol = 3; nsim = 1000 ; RunSPD = T ; nspag = ncol(Noisy)
 # 2. Define which parameters are varying in parameterization 
 isVar=c(T,F,F,T,F,F,F,F,F)
 # 3. Define parameter names and prior distributions for b,a,c (of any control)
@@ -48,20 +48,20 @@ margins.bac=c('Gaussian','LogNormal','Gaussian')
 #---------------------------------------
 # Priors are defined through Monte Carlo samples
 # 1. Priors for low-flow control (control 1)
-b1<-rnorm(nsim,mean=-5,sd=0.5) # weir activation stage
+b1<-rnorm(nsim,mean=-5,sd=0.25) # 
 c1<-rnorm(nsim,mean=5/3,sd=0.025) # exponent
-Bc1<-rlnorm(nsim,meanlog=log(200),sdlog=as.numeric(Transf_Gauss_lognorm(200,100)[2])) # channel width
+Bc1<-rlnorm(nsim,meanlog=log(300),sdlog=as.numeric(Transf_Gauss_lognorm(300,100)[2])) # channel width
 KS1<-rlnorm(nsim,meanlog=log(35),sdlog=as.numeric(Transf_Gauss_lognorm(35,5)[2])) # Strickler coefficient
-S01<-rlnorm(nsim,meanlog=log(5e-5),sdlog=as.numeric(Transf_Gauss_lognorm(5e-5,1e-5)[2])) # slope
+S01<-rlnorm(nsim,meanlog=log(5e-5),sdlog=as.numeric(Transf_Gauss_lognorm(5e-5,3e-5)[2])) # slope
 
 # 2. Priors for main channel (control 2)
-b2<-rnorm(nsim,mean=0,sd=0.5) # channel bed stage
+b2<-rnorm(nsim,mean=-5,sd=0.25) # channel bed stage
 c2<-rnorm(nsim,mean=5/3,sd=0.025) # exponent
 Bc2<-rlnorm(nsim,meanlog=log(300),sdlog=as.numeric(Transf_Gauss_lognorm(300,100)[2])) # channel width
 KS2<-rlnorm(nsim,meanlog=log(35),sdlog=as.numeric(Transf_Gauss_lognorm(35,5)[2])) # Strickler coefficient
 S02<-rlnorm(nsim,meanlog=log(2e-4),sdlog=as.numeric(Transf_Gauss_lognorm(2e-4,5e-5)[2])) # slope
 
-# 2. Priors for main channel (control 3)
+# 2. Priors for main channel + floodway(control 3)
 b3<-rnorm(nsim,mean=8,sd=0.5) # channel bed stage
 c3<-rnorm(nsim,mean=5/3,sd=0.025) # exponent
 Bc3<-rlnorm(nsim,meanlog=log(200),sdlog=as.numeric(Transf_Gauss_lognorm(200,100)[2])) # channel width
@@ -69,28 +69,29 @@ KS3<-rlnorm(nsim,meanlog=log(25),sdlog=as.numeric(Transf_Gauss_lognorm(25,5)[2])
 S03<-rlnorm(nsim,meanlog=log(2.4e-4),sdlog=as.numeric(Transf_Gauss_lognorm(2.4e-4,5e-5)[2])) # slope
 
 # 4. Priors for incremental global changes
-d.g<-matrix(rnorm(nsim*(nperiod-1),mean=0,sd=0.3),nrow=nsim,ncol=nperiod-1)
+#no global change
+d.g<-matrix(rnorm(nsim*(nperiod-1),mean=0,sd=0),nrow=nsim,ncol=nperiod-1)
 # 5. Priors for incremental local changes
 d.l<-matrix(rnorm(nsim*(nperiod-1),mean=0,sd=0.8),nrow=nsim,ncol=nperiod-1)
 # 6. Starting point for all parameters
 start=list(
-  b1=-5,c1=5/3,Bc1=200,KS1=35,S01=5e-5,  # control 1
-  b2= 0,c2=5/3,Bc2=300,KS2=35,S02=2e-4, # control 2
+  b1=-5,c1=5/3,Bc1=300,KS1=35,S01=5e-5,  # control 1
+  b2=-4,c2=5/3,Bc2=300,KS2=35,S02=2e-4, # control 2
   b3= 8,c3=5/3,Bc3=200,KS3=25,S03=2.4e-4, # control 3
   d.l=rep(0,nperiod-1),     # incremental local changes d.l
   d.g=rep(0,nperiod-1)      # incremental global changes d.g
 )
 
 M                 = matrix(0, ncontrol, ncontrol)  #matrix of controls:
-M[1,]             = c(1,0,0)   # control section (rectangular weir in critical condition)
-M[2,]             = c(0,1,0)   # main control channel (rectangular wide channel in uniform condition)
+M[1,]             = c(1,0,0)   # 
+M[2,]             = c(0,1,0)   # main channel (rectangular wide channel in uniform condition)
 M[3,]             = c(0,1,1)
 Hmax = 10 # by default, 10 but be careful
 
 #---------------------------------------
 # Perform Monte-Carlo propagation
 #---------------------------------------
-MC=propagate_BcrRes_varb1b2_b3reverse(b1,c1,Bc1,KS1,S01,  # control 1: rectangular weir
+MC=propagate_BcrRes_localb1b2_reverse(b1,c1,Bc1,KS1,S01,  # control 1: rectangular weir
                                       b2,c2,Bc2,KS2,S02, # control 2: rectangular weir
                                       b3,c3,Bc3,KS3,S03, # control 3: rectangular weir
                                       d.g,d.l,           # global and local incremental changes
@@ -350,10 +351,9 @@ ggarrange(plot.RC+
             coord_cartesian(ylim=ylim.wind,xlim=xlim.wind)+
             theme(axis.title.x = element_blank()),
           IC,
-          ncol = 1,align = "v",common.legend = T,legend = "right",
-          heights = c(2,1))
-ggsave(filename = "RClog_ICdown.pdf",path = paste0(dir.plot.case,"SPD/"), width = 12, height = 7)
-
+          ncol = 1,align = "v",common.legend = T, legend = "right",
+          heights = c(2.5,1))
+ggsave(filename = "RClog_ICdown.pdf",path = paste0(dir.plot.case,"SPD/"), width = 12, height = 10)
 #### all param boxplot
 prior.bs = MC$sim[,c(1:nperiod,(nperiod+3):(2*nperiod+2))]
 post.bs = data.frame(tail(data.MCMC.spd[,c(1:nperiod,(nperiod+3):(2*nperiod+2))],1000))
@@ -383,11 +383,10 @@ boxbs=ggplot(data=ParamsBoxplot)+
   theme_bw(base_size=20)+
   labs(fill = "")+
   theme(axis.title.x = element_blank(),
-        axis.text=element_text(size=20),axis.title=element_text(size=25,face="bold")
-        #,panel.grid.major=element_line(size=1),panel.grid.minor=element_line(size=0.8)
-        ,legend.text=element_text(size=15),legend.title=element_text(size=20)
+        axis.text=element_text(size=30),axis.title=element_text(size=30,face="bold")
+        ,legend.text=element_text(size=5),legend.title=element_text(size=20)
         ,legend.key.size=unit(1.5, "cm"),legend.position="none" #"right"
-        ,strip.text.x=element_text(size = 25,face="bold"))+
+        ,strip.text.x=element_text(size = 30,face="bold"))+
   scale_x_discrete(breaks=c("b1_1","b2_1",
                             "b1_2","b2_2",
                             "b1_3","b2_3",
@@ -412,7 +411,7 @@ boxbs=ggplot(data=ParamsBoxplot)+
                             bquote(b[1]^(11)),bquote(b[2]^(11))
                    ))
 
-pdf(paste(dir.plot.case,"b1-b2s_Restit.pdf",sep=""),20,9,useDingbats=F)
+pdf(paste(dir.plot.case,"b1-b2s_Restit.pdf",sep=""),16,10,useDingbats=F)
   print(boxbs)
 dev.off()
 
@@ -429,7 +428,7 @@ boxb3s=ggplot(data=b3s)+
   geom_boxplot(aes(x=variable,y=value,fill=type),colour="black")+
   theme_bw(base_size=15)+
   ylab("Offset [m]")+
-  theme(axis.text=element_text(size=20),axis.title=element_text(size = 20)
+  theme(axis.text=element_text(size=25),axis.title=element_text(size = 25)
         ,panel.grid.major=element_line(size=1),panel.grid.minor=element_line(size=0.8)
         ,legend.text=element_text(size=15),legend.title=element_blank()
         ,legend.key.size=unit(1.5, "cm"),legend.position="none"
@@ -450,11 +449,11 @@ as = rbind(priors.as,post.as)
 boxas=ggplot(data=as)+
   geom_boxplot(aes(x=variable,y=value,fill=type),colour="black")+
   theme_bw(base_size=15)+
-  theme(axis.text=element_text(size=20),axis.title=element_text(size = 20)
+  theme(axis.text=element_text(size=25)#,axis.title=element_blank()
         ,panel.grid.major=element_line(size=1),panel.grid.minor=element_line(size=0.8)
-        ,legend.text=element_text(size=25),legend.title=element_blank()
-        ,legend.key.size=unit(1.5, "cm"),legend.position="right"
-        ,axis.title.x=element_blank())+
+        ,legend.text=element_text(size=20),legend.title=element_blank()
+        ,legend.key.size=unit(1.5, "cm"),legend.position="bottom"
+        ,axis.title.x=element_blank(), axis.title = element_text(size = 25))+
   scale_x_discrete(breaks=c("a1","a2","a3"),
                    labels=c(bquote(a[1]),bquote(a[2]),bquote(a[3])))+
   ylab("Value [-]")
@@ -470,9 +469,9 @@ cs = rbind(priors.cs,post.cs)
 boxcs=ggplot(data=cs)+
   geom_boxplot(aes(x=variable,y=value,fill=type),colour="black")+
   theme_bw(base_size=15)+
-  theme(axis.text=element_text(size=20),axis.title=element_text(size = 20)
+  theme(axis.text=element_text(size=25),axis.title=element_text(size = 25)
         ,panel.grid.major=element_line(size=1),panel.grid.minor=element_line(size=0.8)
-        ,legend.text=element_text(size=15),legend.title=element_blank()
+        ,legend.text=element_text(size=20),legend.title=element_blank()
         ,legend.key.size=unit(1.5, "cm"),legend.position="none"
         ,axis.title.x=element_blank())+
   scale_x_discrete(breaks=c("c1","c2","c3"),
@@ -482,7 +481,7 @@ boxcs=ggplot(data=cs)+
 # boxcs
 # 
 pdf(paste(dir.plot.case,"b3_as_cs_Restit.pdf",sep=""),15,7,useDingbats=F,onefile = F)
-  ggarrange(boxb3s,boxas,boxcs,legend = 'right',ncol = 3,align = "hv",common.legend = T)
+  ggarrange(boxb3s,boxas,boxcs,legend = 'none',ncol = 3,align = "hv",common.legend = T)
 dev.off()
 
 

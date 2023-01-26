@@ -958,6 +958,61 @@ propagate_BcrRes_varb1b2_b3reverse<-function(b1,c1,Bc1,KS1,S01, # control 1: low
   )
 }
 
+propagate_BcrRes_localb1b2_reverse<-function(b1,c1,Bc1,KS1,S01, # control 1: low-flow channel
+                                             b2,c2,Bc2,KS2,S02, # control 2: mid-flow channel
+                                             b3,c3,Bc3,KS3,S03, # 3 : high flow
+                                             d.g,d.l,   # incremental changes on low-flow channel bed and high-flow channel bed
+                                             start){              # starting vector
+  
+  
+  nsim=length(b1);nperiod=NCOL(d.l)+1
+  # initialise parameters that will be computed by propagation
+  a1=vector(mode='double',length=nsim)
+  a2=vector(mode='double',length=nsim)
+  a3=vector(mode='double',length=nsim)
+  allb1=matrix(NA,nsim,nperiod)
+  allb2=matrix(NA,nsim,nperiod)
+  #------------------------------
+  # Monte-Carlo propagation
+  #------------------------------
+  for(i in 1:nsim){
+    # Compute a1, a2 and a3
+    a1[i]=KS1[i]*Bc1[i]*sqrt(S01[i])
+    a2[i]=KS2[i]*Bc2[i]*sqrt(S02[i])
+    a3[i]=KS3[i]*Bc3[i]*sqrt(S03[i])
+    # compute b1 and b2 for all periods
+    allb1[i,1]=b1[i]
+    allb1[i,2:nperiod]=b1[i]-cumsum(d.l[i,])
+    allb2[i,1]=b2[i]
+    allb2[i,2:nperiod]=b2[i]-cumsum(d.l[i,])
+  }
+  
+  allb1 = allb1[,nperiod:1]
+  allb2 = allb2[,nperiod:1]
+  
+  #-------------------------------------------------
+  # transform starting vector in parameterization P2
+  #-------------------------------------------------
+  allb1.s=vector(mode='double',length=nperiod)
+  allb2.s=vector(mode='double',length=nperiod)
+  # All b1's
+  allb1.s[1]=start$b1
+  allb1.s[2:nperiod]=start$b1-cumsum(start$d.l)
+  # All b2's
+  allb2.s[1]=start$b2
+  allb2.s[2:nperiod]=start$b2-cumsum(start$d.l)
+  # a's
+  a1.s=start$KS1*start$Bc1*sqrt(start$S01)
+  a2.s=start$KS2*start$Bc2*sqrt(start$S02)
+  a3.s=start$KS3*start$Bc3*sqrt(start$S03)
+  # return results
+  return(list(
+    sim=data.frame(b1=allb1,a1=a1,c1=c1,b2=allb2,a2=a2,c2=c2,b3=b3,a3=a3,c3=c3),
+    start=c(allb1.s,a1.s,start$c1,allb2.s,a2.s,start$c2,start$b3,a3.s,start$c3)
+  )
+  )
+}
+
 ###############################################################################
 Transf_Gauss_lognorm = function(E, stdev){
   ###############################################################################  

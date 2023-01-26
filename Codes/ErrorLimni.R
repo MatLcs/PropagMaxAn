@@ -116,7 +116,7 @@ HmaxA = data.frame(y = years,Date = as.Date("1900-01-01"), H = NA)
 countrec = 1
 
 ## datum reference error init delta4
-d4_pt = rnorm(1,0,1)*(0.068/1.96)
+d4_pt = rnorm(1,0,1)*0.06
 
 for(i in 1 : nrow(NoisyLimni) ){
   
@@ -130,7 +130,7 @@ for(i in 1 : nrow(NoisyLimni) ){
   ## draw a new datum reference err each 25 years
   if(countrec == 25){
     countrec = 1
-    d4_pt = rnorm(1,0,1)*(0.068/1.96)  }
+    d4_pt = rnorm(1,0,1)*0.06  }
   
   HmaxA$H[i] = Hmax
   HmaxA$Date[i] = Dmax
@@ -201,10 +201,10 @@ NoisyLimni = round(NoisyLimni,2)
 
 ### IC abs plot
 IC_an = ggplot()+
-  labs(x = "Year", y = "AMAX stage & 95% conf. interval [m]") +
+  labs(x = "Year", y = "AMAX stage & uncertainty interval [m]") +
   theme_bw(base_size=15)+
   geom_ribbon(data = HmaxA,
-              aes(x = y, ymin = min, ymax=max,fill= "Confidence interval"))+
+              aes(x = y, ymin = min, ymax=max,fill= "Uncertainty interval"))+
   geom_line(data = HmaxA, aes(x = y, y = H),lwd=1)+
   # geom_line(data = HmaxA, aes(x = y, y = med),lwd=1,col="red")+
   theme(legend.position = "NULL")+
@@ -222,10 +222,10 @@ IC_an = ggplot()+
 
 ### IC rel plot
 IC_perc = ggplot()+
-  labs(x = "Year", y = "95% conf. interval diff. to measured stage [m]") +
+  labs(x = "Year", y = "Uncertainty interval diff. to measured stage [m]") +
   theme_bw(base_size=15)+
   geom_ribbon(data = HmaxA,
-              aes(x = y, ymin = min-H, ymax=max-H, fill = "Confidence interval"))+
+              aes(x = y, ymin = min-H, ymax=max-H, fill = "Uncertainty interval"))+
   geom_line(data = HmaxA, aes(x = y, y = 0), lwd=1)+
   geom_line(data = HmaxA, aes(x = y, y = med-H), col="red",lwd=1)+
   theme(legend.position = "NULL")+
@@ -233,7 +233,7 @@ IC_perc = ggplot()+
          ,axis.title=element_text(size=14)
          ,legend.text=element_text(size=15)
          ,legend.title=element_text(size=15)
-         ,legend.key.size=unit(1, "cm"))  +
+         ,legend.key.size=unit(1, "cm"))  
   # geom_vline(aes(xintercept=1841),lwd=1, lty =2 , col="grey")
   # coord_cartesian(ylim = c(2,10))  
 
@@ -249,7 +249,7 @@ NoisyRestit = matrix(ncol = nspag, nrow = nrow(MaxARestit))
 for(i in 1:nrow(NoisyRestit)){
   NoisyRestit[i,] = MaxARestit$h[i] +
     ## sensor precision
-    rnorm(nspag,0, 0.02/1.96)+
+    rnorm(nspag,0, 0.01/sqrt(3))+
     #calibration every 6 month, new draw every year
     rnorm(nspag,0, 0.12/1.96) }
 
@@ -265,10 +265,10 @@ names(HmaxA_Res) = c("y","Date","H","min","max","med")
 
 ### IC abs plot
 IC_an_res = ggplot()+
-  labs(x = "Year", y = "AMAX stage & 95% conf. interval [m]") +
+  labs(x = "Year", y = "AMAX stage & uncertainty interval [m]") +
   theme_bw(base_size=15)+
   geom_ribbon(data = HmaxA_Res,
-              aes(x = y, ymin = min, ymax=max,fill= "Confidence interval"))+
+              aes(x = y, ymin = min, ymax=max,fill= "Uncertainty interval"))+
   geom_line(data = HmaxA_Res, aes(x = y, y = H),lwd=1)+
   # geom_line(data = HmaxA, aes(x = y, y = med),lwd=1,col="red")+
   theme(legend.position = "NULL")+
@@ -284,34 +284,32 @@ IC_an_res = ggplot()+
 HmaxA$st = as.factor("Pt")
 HmaxA_Res$st = as.factor("Res")
 BothMax = rbind(HmaxA,
-                c(1968,NA,NA,NA,NA),
-                c(1969,NA,NA,NA,NA),
-                c(1970,NA,NA,NA,NA),
+                c(1968,NA,NA,NA,NA,NA,NA),
+                c(1969,NA,NA,NA,NA,NA,NA),
+                c(1970,NA,NA,NA,NA,NA,NA),
                 HmaxA_Res)
 
 
 ### IC abs plot
 IC_an_both = ggplot()+
-  labs(x = "Year", y = "AMAX stage & 95% conf. interval [m]") +
+  labs(x = "Year", y = "Stage [m]") +
   theme_bw(base_size=15)+
   geom_ribbon(data = BothMax,
-              aes(x = y, ymin = min, ymax=max,fill= st))+
-  geom_line(data = BothMax, aes(x = y, y = H, color = st),lwd=0.7)+
-  scale_color_manual(values = c("black","black"))+
-  # scale_fill_manual(values = ("deepskyblue"))+
-  # geom_line(data = HmaxA, aes(x = y, y = med),lwd=1,col="red")+
-  theme(legend.position = "NULL")+
-  theme( axis.text=element_text(size=12)
-         ,axis.title=element_text(size=18)
-         ,legend.text=element_text(size=15)
-         ,legend.title=element_text(size=18)
+              aes(x = y, ymin = min, ymax=max,fill= "Stage uncertainty"))+
+  geom_line(data = BothMax, aes(x = y, y = H, color = "Measured Stage"),lwd=0.7)+
+  # geom_vline(aes(xintercept=1841), lwd = 1, lty = 2)+
+  geom_vline(aes(xintercept=c(1968,1969,1970), color = "Vallabrègues Works"), lwd = 4)+
+  geom_line(data = BothMax, aes(x = y, y = 0#med
+                                , col = "Median stage"),lwd = 0.5)+
+  scale_fill_manual(values = c("#fec44f"))+
+  scale_color_manual(values = c("black","red","lightgrey"))+
+  theme( axis.text=element_text(size=20)
+         ,axis.title=element_text(size=20)
+         ,legend.text=element_text(size=20)
+         ,legend.title=element_blank()#element_text(size=18)
          ,legend.key.size=unit(1, "cm"))+
-  geom_vline(aes(xintercept=1841), lwd = 1, lty = 2)+
-  geom_vline(aes(xintercept=c(1968,1969,1970)), lwd = 4, col = "lightgrey")
-  # geom_line(data=data.frame(x=1816:1841,y=7),aes(x=x,y=y))+
-  # geom_line(data=data.frame(x=1841:1967,y=5),aes(x=x,y=y))
-#coord_cartesian(ylim = c(2.5,10.5))  
-
+  coord_cartesian(ylim = c(2.5,11.5))
+  
 # IC_an_both
 
 ### IC rel both
@@ -319,26 +317,25 @@ IC_rel_both = ggplot()+
   labs(x = "Year", y = "Difference to measured stage [m]") +
   theme_bw(base_size=15)+
   geom_ribbon(data = BothMax,
-              aes(x = y, ymin = min-H, ymax=max-H, fill = st))+
-  geom_line(data = BothMax, aes(x = y, y = 0), lwd=1)+
-  geom_line(data = BothMax, aes(x = y, y = med-H, color = st),lwd=1)+
-  scale_color_manual(values=c("red","red"))+
-  theme(legend.position = "NULL")+
-  theme( axis.text=element_text(size=12)
-         ,axis.title=element_text(size=18)
-         ,legend.text=element_text(size=15)
-         ,legend.title=element_text(size=18)
-         ,legend.key.size=unit(1, "cm"))  +
-  geom_vline(aes(xintercept=1841), lwd = 1, lty = 2)+
-  geom_vline(aes(xintercept=c(1968,1969,1970)), lwd = 4, col = "lightgrey")
-# coord_cartesian(ylim = c(2,10))  
+              aes(x = y, ymin = min-H, ymax=max-H, fill = "Stage uncertainty"))+
+  geom_line(data = BothMax, aes(x = y, y = 0, col = "Measured stage"), lwd=1)+
+  geom_line(data = BothMax, aes(x = y, y = med-H, color = "Median stage"),lwd=1)+
+  geom_vline(aes(xintercept=c(1968,1969,1970), color = "Vallabrègues Works"), lwd = 4)+
+  # geom_vline(aes(xintercept=1841), lwd = 1, lty = 2)+
+  scale_fill_manual(values = c("#fec44f"))+
+  scale_color_manual(values = c("black","red","lightgrey"))+
+  theme( axis.text=element_text(size=20)
+         ,axis.title=element_text(size=20)
+         ,legend.text=element_text(size=20)
+         ,legend.title=element_blank()#element_text(size=18)
+         ,legend.key.size=unit(1, "cm"))  
 
 # IC_rel_both
 
 ggarrange(IC_an_both+
             theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x.bottom = element_blank()),
-          IC_rel_both+theme(axis.text.x = element_text(size=18), axis.title.x = element_text(size=18))
-          ,ncol = 1,align = "v")
+          IC_rel_both+theme(axis.text.x = element_text(size=20), axis.title.x = element_text(size=25))
+          ,ncol = 1,align = "v", common.legend = T, legend = "right")
 ggsave(path = dir.plots, filename = "StageErrorAMAX_BOTH.pdf",width = 15, height = 10)
 
 ### Save

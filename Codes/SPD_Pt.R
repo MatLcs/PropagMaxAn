@@ -334,8 +334,8 @@ dir.bar = paste0(dir.bam,"BaR_",case)
               theme(axis.title.x = element_blank()),
             IC,
             ncol = 1,align = "v",common.legend = T, legend = "right",
-            heights = c(2,1))
-  ggsave(filename = "RClog_ICdown.pdf",path = paste0(dir.plot.case,"SPD/"), width = 12, height = 7)
+            heights = c(2.5,1))
+  ggsave(filename = "RClog_ICdown.pdf",path = paste0(dir.plot.case,"SPD/"), width = 12, height = 10)
   
   #### all param boxplot
   prior.bs = MC$sim[,c(1:10,13:22)]
@@ -364,10 +364,10 @@ dir.bar = paste0(dir.bam,"BaR_",case)
     theme_bw(base_size=20)+
     labs(fill = "")+
     theme(axis.title.x = element_blank(),
-          axis.text=element_text(size=20),axis.title=element_text(size=25,face="bold")
+          axis.text=element_text(size=30),axis.title=element_text(size=30,face="bold")
           ,legend.text=element_text(size=5),legend.title=element_text(size=20)
           ,legend.key.size=unit(1.5, "cm"),legend.position="none" #"right"
-          ,strip.text.x=element_text(size = 25,face="bold"))+
+          ,strip.text.x=element_text(size = 30,face="bold"))+
     scale_x_discrete(breaks=c("b1_1","b2_1",
                               "b1_2","b2_2",
                               "b1_3","b2_3",
@@ -390,7 +390,7 @@ dir.bar = paste0(dir.bam,"BaR_",case)
                               bquote(b[1]^(10)),bquote(b[2]^(10))
                      ))
   
-  pdf(paste(dir.plot.case,"SPD/bs.pdf",sep=""),20,9,useDingbats=F)
+  pdf(paste(dir.plot.case,"SPD/bs.pdf",sep=""),16,10,useDingbats=F)
     print(boxbs)
   dev.off()
   
@@ -405,11 +405,11 @@ dir.bar = paste0(dir.bam,"BaR_",case)
     geom_boxplot(aes(x=variable,y=value,fill=type),colour="black")+
     theme_bw(base_size=15)+
     ylab("Value [-]")+
-    theme(axis.text=element_text(size=20)#,axis.title=element_blank()
+    theme(axis.text=element_text(size=25)#,axis.title=element_blank()
           ,panel.grid.major=element_line(size=1),panel.grid.minor=element_line(size=0.8)
           ,legend.text=element_text(size=20),legend.title=element_blank()
           ,legend.key.size=unit(1.5, "cm"),legend.position="bottom"
-          ,axis.title.x=element_blank(), axis.title = element_text(size = 20))+
+          ,axis.title.x=element_blank(), axis.title = element_text(size = 25))+
     scale_x_discrete(breaks=c("a1","a2"),
                      labels=c(bquote(a[1]),bquote(a[2])))
   ######## C's
@@ -425,14 +425,14 @@ dir.bar = paste0(dir.bam,"BaR_",case)
     # ylab("Exponent value [-]")+
     theme(axis.text=element_text(size=25),axis.title=element_blank()
           ,panel.grid.major=element_line(size=1),panel.grid.minor=element_line(size=0.8)
-          ,legend.text=element_text(size=15),legend.title=element_blank()
+          ,legend.text=element_text(size=20),legend.title=element_blank()
           ,legend.key.size=unit(1.5, "cm"),legend.position="right"
           ,axis.title.x=element_blank())+
     scale_x_discrete(breaks=c("c1","c2"),
                      labels=c(bquote(c[1]),bquote(c[2])))
 
   pdf(paste(dir.plot.case,"SPD/a&cs.pdf",sep=""),12,7,useDingbats=F,onefile = F)
-    ggarrange(boxas,boxcs,legend = 'right',ncol = 2,align = "hv",common.legend = T)
+    ggarrange(boxas,boxcs,legend = 'none',ncol = 2,align = "hv",common.legend = T)
   dev.off()
   
   

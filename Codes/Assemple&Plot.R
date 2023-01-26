@@ -5,15 +5,15 @@ source(paste0(dir.codes,"module_BaRatin.r"))
 source(paste0(dir.codes,"Fun_SPD.r"))
 
 case1 = "Pt"
-case2 = "Res"
+case2 = "Res-Loc"
 
 ######################################
 ############ DATA LOADING ############
 ######################################
   Spagtot1 = read.table(paste0(dir.res,case1,"/TotSpagsAMAX_",case1,".txt"),header = T)
   Quants1 = read.table(paste0(dir.res,case1,"/Quantiles_Amax",case1,".txt"), header = T)
-  Spagtot2 = read.table(paste0(dir.res,case2,"/TotSpagsAMAX_",case2,".txt"), header = T)
-  Quants2 = read.table(paste0(dir.res,case2,"/Quantiles_Amax",case2,".txt"), header = T)
+  Spagtot2 = read.table(paste0(dir.res,case2,"/TotSpagsAMAX_Res.txt"), header = T)
+  Quants2 = read.table(paste0(dir.res,case2,"/Quantiles_AmaxRes.txt"), header = T)
   Gau1 = data.frame(Date = ymd(read.csv2(paste0(dir.data,"JauBeaucaireOLD.csv"))[,1]), Y = NA)
   Gau2 = data.frame(Date = ymd(read.csv2(paste0(dir.data,"JauBeaucaireCNR.csv"),header=T)[,1]), Y = NA)
   Tshifts1 = c(as.Date("1840-11-02"),
@@ -24,13 +24,13 @@ case2 = "Res"
 ######################################
 ######### DATA FORMATTING ############
 ######################################
-  ### 3 missing years = annuaire hydro + ic +/- 10%
+  ### 3 missing years = annuaire hydro + ic +/- sd(10%)
   Miss = data.frame(an = 1968:1970, mp = c(4760,4995,5510), mp2.5=NA,mp97.5=NA,param2.5=NA,param97.5=NA,
                     tot2.5 = NA , tot97.5 =NA)
-  Miss$tot2.5 = qnorm(0.025,Miss$mp,(0.05*Miss$mp)) ; Miss$tot97.5 = qnorm(0.975,Miss$mp,(0.05*Miss$mp))
-  MissNoisy = rbind(  rnorm(n = 500, mean = Miss$mp[1], sd = 0.05*Miss$mp[1]),
-                      rnorm(n = 500, mean = Miss$mp[2], sd = 0.05*Miss$mp[2]),
-                      rnorm(n = 500, mean = Miss$mp[3], sd = 0.05*Miss$mp[3]) )
+  Miss$tot2.5 = qnorm(0.025,Miss$mp,(0.1*Miss$mp)) ; Miss$tot97.5 = qnorm(0.975,Miss$mp,(0.1*Miss$mp))
+  MissNoisy = rbind(  rnorm(n = 500, mean = Miss$mp[1], sd = 0.1*Miss$mp[1]),
+                      rnorm(n = 500, mean = Miss$mp[2], sd = 0.1*Miss$mp[2]),
+                      rnorm(n = 500, mean = Miss$mp[3], sd = 0.1*Miss$mp[3]) )
   # combining both stations data
   Tshifts = c(Tshifts1,Tshifts2)
   Quants = rbind(Quants1,Miss,Quants2)
@@ -48,10 +48,11 @@ case2 = "Res"
 ######################################
 ICreldif = ggplot()+
   scale_x_continuous(name = expression("Year"), expand=c(0,2))+
-  scale_y_continuous(name = expression("Relative uncertainty for annual maximum discharges [%]"),
+  scale_y_continuous(name = expression("Relative uncertainty of AMAX discharges [%]"),
                      expand=c(0.1,0))+
-  labs(x = "Time [day]", y = "Relative uncertainty for annual maximum discharges [%]") +
   theme_bw(base_size=15)+
+  geom_vline(xintercept = year(Tshifts),show.legend = T, linetype = 2,
+               size = 0.8, color = "lightgrey")+
   geom_ribbon(data = Quants,
               aes(x = an, ymin = ((tot2.5-mp)/mp)*100, ymax= ((tot97.5-mp)/mp)*100,#),
                   fill= "3 - Remnant uncertainty"))+#, alpha = 0.5,show.legend = T)+
@@ -63,24 +64,24 @@ ICreldif = ggplot()+
                   fill="1 - Limnimetric uncertainty"))+#, alpha = 0.5,show.legend = T)+
   geom_ribbon(data = Quants[which(Quants$an >= 1967 & Quants$an <= 1971),], aes(x = an, 
               ymin = ((tot2.5-mp)/mp)*100, ymax= ((tot97.5-mp)/mp)*100, 
-              fill = "4 - Reconstructed")   )+
+              fill = "4 - Reconstructed discharges"))+
   geom_line(data = Quants, aes(x = an, y = 0))+
-  geom_vline(xintercept = year(Tshifts),show.legend = T, linetype=2)+
   theme(legend.position = "right")+#,legend.text = element_text(size=8))+
   scale_fill_manual(name = element_blank(),
                     values = c("#fec44f","#fa9fb5","#f03b20","grey"))+
   geom_point(aes(x = 1816 : 2020,y = 0,size = Njau),color='blue',alpha = 0.5)+
-  theme( axis.text=element_text(size=12)
-         ,axis.title=element_text(size=14)
+  theme( axis.text=element_text(size=20)
+         ,axis.title=element_text(size=20)
          ,legend.text=element_text(size=15)
          ,legend.title=element_text(size=15)
-         #,plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm")
+         # ,legend.position = c(0.85,0.75)
          ,legend.key.size=unit(1, "cm"))+
   scale_size(range = c(1, 10), name="Gaugings / year")
-
-pdf(paste0(dir.plots,"/ICrel_AMAX_Both.pdf"),14)
-  print(ICreldif)
-dev.off()
+  # coord_cartesian(ylim = c(-30,80))
+# 
+# pdf(paste0(dir.plots,"/ICrel_AMAX_Both.pdf"),14)
+#   print(ICreldif)
+# dev.off()
 
 
 IC_Amax = ggplot()+
@@ -113,10 +114,27 @@ IC_Amax = ggplot()+
          ,legend.key.size=unit(1, "cm"))+
   scale_size_continuous(range = c(3, 15),name="Gaugings / year")+
   coord_cartesian(ylim=c(2000,16000))
+# 
+# pdf(paste0(dir.plots,"IC_AMAX_Both.pdf"),16)
+#   print(IC_Amax)
+# dev.off()
 
-pdf(paste0(dir.plots,"IC_AMAX_Both.pdf"),14)
-  print(IC_Amax)
-dev.off()
+Amax = ggplot()+
+  scale_x_continuous(name = expression("Year"), expand=c(0,2))+
+  geom_line(data = Quants, aes(x = an, y = mp), lwd = 1.2)+
+  theme_light(base_size=15)+
+  theme( axis.text=element_text(size=20)
+         ,axis.title=element_text(size=20))+
+  labs(x = "Year", y = expression(paste("Discharge [",m^3,".",s^-1,"]",sep="")))+
+  coord_cartesian(xlim = c(1816,2020))
+
+Amax
+
+ggarrange(ICreldif+theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+            , Amax,nrow = 2, common.legend = T, legend = "right", align = "v",
+            heights = c(5,1))
+
+ggsave(path = dir.plots, filename = "IcAndAMAX.pdf",width = 17, height = 10)
 
 ######################################
 ##### WRITING FINAL HYDRO DATA #######

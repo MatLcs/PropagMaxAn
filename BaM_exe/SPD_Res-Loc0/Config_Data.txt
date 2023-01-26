@@ -1,0 +1,12 @@
+'SPD_Res-Loc0/Gaugings_data.txt'
+1
+296
+4
+1
+0
+0
+0
+2
+3
+0
+0

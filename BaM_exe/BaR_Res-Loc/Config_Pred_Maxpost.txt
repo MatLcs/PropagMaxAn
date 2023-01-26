@@ -1,0 +1,12 @@
+'BaR_Res-Loc/limni.txt'
+4
+500
+.false.
+.false.
+-1
+'Qt_Maxpost.spag'
+.true.
+.true.
+'Qt_Maxpost.env'
+.false.
+.false.

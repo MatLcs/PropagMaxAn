@@ -10,6 +10,8 @@ source(paste0(dir.codes,"Fun_SPD.r"))
 dir.plots.gev = paste0(dir.plots,"/GeV_all")
 dir.create(dir.plots.gev,showWarnings = F)
 
+plot.only = T
+
 ######################################
 ############ DATA LOADING ############
 ######################################
@@ -20,8 +22,8 @@ QuantHydro = read.table(paste0(dir.res,"Quantiles_Amax.txt"),header=T)
 ######################################
 #### 205 cases of sample size
 nyears = seq(20, length(QuantHydro$an), 2)#c(20 : length(QuantHydro$an))
-nspag = 200#dim(SpagsHydro)[2] 
-nsim = 4000
+nspag = 300#dim(SpagsHydro)[2] 
+nsim = 3000
 #### SToods parameters, common GEV priors to all cases
 Pos <- parameter(name='Pos',init = 6000) 
 Ech =  parameter(name='Ech',init = 1000) 
@@ -40,6 +42,7 @@ dir.create(dir.res.stoods,showWarnings = F)
 ######################################
 ######### MODEL PREPARATION ##########
 ######################################
+if(plot.only==F){
 for(case in 1: length(nyears)){
 # case = 1
   message("***************************************************************")
@@ -144,7 +147,7 @@ ggsave(filename = "WidthQ100.pdf",path = dir.plots.gev,width = 10, height = 7)
 
 
 write.table(round(QuantAll,3),file = paste0(dir.res,"QuantWidth.txt"),row.names = F)
-
+}
 
 
 ####### PLOTS ONLY
@@ -168,28 +171,45 @@ GGQ1000 = ggplot(QuantAll[which(QuantAll$Pr == 1000),])+
                     values = c("#67a9cf","#fec44f"))+
   theme_bw(base_size=15)+
   labs(title="1000-year flood")+
-  theme(legend.title = element_blank())+
-  coord_cartesian(ylim=c(10000,50000))+
+  theme(legend.title = element_blank(),
+        legend.position = c(0.82,0.85),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=25),
+        legend.text=element_text(size=25),
+        plot.title = element_text(hjust = 0.5, vjust = -8,size = 25))+
+  coord_cartesian(ylim=c(10000,48000))+
   scale_y_log10()
 
 GGQ1000
 
-ggsave(filename = "Q1000SSize.pdf",path = dir.plots.gev,width = 10, height = 7)
+ggsave(filename = "Q1000SSize.pdf",path = dir.plots.gev,width = 12, height = 8)
 
 
 GGQ100 = ggplot(QuantAll[which(QuantAll$Pr == 100),])+
   geom_ribbon(aes(x=nyears, ymin=Qtot_9, ymax =  Qtot_2, fill = "1-Total unc."))+
   geom_ribbon(aes(x=nyears, ymin=Qhyd_9, ymax =  Qhyd_2, fill = "2-Streamflow unc."))+
-  geom_line(aes(x=nyears, y = Mp, color = "1000-year flood maxpost value"),lwd=1)+
+  geom_line(aes(x=nyears, y = Mp, color = "maxpost"),lwd=1)+
+  geom_vline(xintercept = 2020-1970, col ="lightgrey", lwd=1, lty = 2)+
+  geom_vline(xintercept = 2020-1856, col ="lightgrey", lwd=1, lty = 2)+
+  geom_vline(xintercept = 2020-1840, col ="lightgrey", lwd=1, lty = 2)+
   xlab("Sample size [years]")+
   ylab("Discharge [m3/s]")+
   scale_fill_manual(name = element_blank(),
                     values = c("#67a9cf","#fec44f"))+
   theme_bw(base_size=15)+
-  labs(title="1000-year flood")+
-  theme(legend.title = element_blank())
+  labs(title="100-year flood")+
+  theme(legend.title = element_blank(),
+        legend.position = c(0.85,0.85),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=25),
+        legend.text=element_text(size=20))+
+  coord_cartesian(ylim=c(9000,25000))+
+  scale_y_log10()
 
 GGQ100
+
+ggsave(filename = "Q100SSize.pdf",path = dir.plots.gev,width = 12, height = 8)
+
 
 
 
