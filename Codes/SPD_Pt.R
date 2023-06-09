@@ -313,6 +313,49 @@ dir.bar = paste0(dir.bam,"BaR_",case)
           coord_cartesian(ylim=ylim.wind,xlim=xlim.wind))
   dev.off()
   
+  ## zoom hQ
+  plot.RCzoom = ggplot(DataRC)+
+    #RC's
+    geom_smooth(aes(x=h,y=maxpost,ymax=sup,ymin=inf,colour=period),size=1,stat='identity',alpha=0.2)+
+    geom_path(aes(x=h,y=maxpost,colour=period),size=1.5)+
+    ### Gaugings
+    geom_linerange(aes(x=h,ymax=Q+2*uQ,ymin=Q-2*uQ,colour=Period),data=GauPlot,size=1)+
+    geom_point(aes(x=h,y=Q,colour=Period),data=GauPlot,na.rm=T,shape=16,size=3)+
+    ### Labels
+    xlab(expression(paste("Stage [m]",sep="")))+
+    ylab(expression(paste("Discharge [",m^3,".",s^-1,"]",sep="")))+
+    labs(colour = "Period")+
+    scale_fill_brewer(type = "div",palette = 5,aesthetics = "color")+
+    # scale_color_manual(values = RColorBrewer::brewer.pal(10, name = "RdBu")[1:2] )+
+    ### 1840
+    geom_segment(aes(x = 8.75, xend = 8.75, y = 0, 
+                     yend = DataRC$maxpost[which(DataRC$period == 1 & DataRC$h == 8.75)]), 
+                 lwd = 1, lty = 2, color = RColorBrewer::brewer.pal(10, name = "RdBu")[1])+
+    geom_segment(aes(x = 0, xend = 8.75, y = DataRC$maxpost[which(DataRC$period == 1 & DataRC$h == 8.75)], 
+                     yend = DataRC$maxpost[which(DataRC$period == 1 & DataRC$h == 8.75)]), 
+                 lwd = 1, lty = 2, color = RColorBrewer::brewer.pal(10, name = "RdBu")[1])+
+    geom_text(aes(x = 5.75, y = 13800, label = "1840"),
+              col = RColorBrewer::brewer.pal(10, name = "RdBu")[1] , size = 8)+
+    ### 1856
+    geom_segment(aes(x = 8.77, xend = 8.77, y = 0, 
+                     yend = DataRC$maxpost[which(DataRC$period == 2 & DataRC$h == 8.77)]), 
+                 lwd = 1, lty = 2, color = RColorBrewer::brewer.pal(10, name = "RdBu")[2])+
+    geom_segment(aes(x = 0, xend = 8.77, y = DataRC$maxpost[which(DataRC$period == 2 & DataRC$h == 8.77)], 
+                     yend = DataRC$maxpost[which(DataRC$period == 2 & DataRC$h == 8.77)]), 
+                 lwd = 1, lty = 2, color = RColorBrewer::brewer.pal(10, name = "RdBu")[2])+
+    geom_text(aes(x = 6.25, y = 12200, label = "1856"),
+              col = RColorBrewer::brewer.pal(10, name = "RdBu")[2] , size = 8)+
+    coord_cartesian(ylim=c(5000,15000),xlim=c(5,10))+
+    ### Theme
+    theme_bw(base_size=20)+
+    theme(axis.text=element_text(size=15),axis.title=element_text(size=20,face="bold")
+          ,panel.grid.major=element_line(size=1.2),panel.grid.minor=element_line(size=0.8)
+          ,legend.text=element_text(size=15),legend.title=element_text(size=20)
+          ,legend.key.size=unit(1.5, "cm"),legend.position="right")
+  
+  plot.RCzoom
+  ggsave(path = paste0(dir.plot.case,"SPD/"), filename = "RC_zoom.pdf", width = 16, height = 10)
+  
   ## with IC
   IC=ggplot(DataRC)+
     geom_ribbon(aes(x=h,ymax=((sup-maxpost)/maxpost)*100,ymin= ((inf-maxpost)/maxpost)*100,

@@ -37,7 +37,7 @@ Gau$Period = as.numeric(Gau$Period)
 ######### PRIORS DEFINITION ##########
 ######################################
 # 1. Define number of controls, periods and MonteCarlo samples
-ncontrol = 3; nsim = 1000 ; RunSPD = T ; nspag = ncol(Noisy)
+ncontrol = 3; nsim = 1000 ; RunSPD = F ; nspag = ncol(Noisy)
 # 2. Define which parameters are varying in parameterization 
 isVar=c(T,F,F,T,F,F,F,F,F)
 # 3. Define parameter names and prior distributions for b,a,c (of any control)
@@ -330,6 +330,40 @@ pdf(paste(dir.plot.case,"SPD/RClog.pdf",sep=""),12,7,useDingbats=F)
         scale_y_log10()+
         coord_cartesian(ylim=ylim.wind,xlim=xlim.wind))
 dev.off()
+
+## zoom hQ
+plot.RCzoom = ggplot(DataRC)+
+  #RC's
+  geom_smooth(aes(x=h,y=maxpost,ymax=sup,ymin=inf,colour=period),size=1,stat='identity',alpha=0.2)+
+  geom_path(aes(x=h,y=maxpost,colour=period),size=1.5)+
+  ### Gaugings
+  geom_linerange(aes(x=h,ymax=Q+2*uQ,ymin=Q-2*uQ,colour=Period),data=Gau,size=1)+
+  geom_point(aes(x=h,y=Q,colour=Period),data=Gau,na.rm=T,shape=16,size=3)+
+  ### Labels
+  xlab(expression(paste("Stage [m]",sep="")))+
+  ylab(expression(paste("Discharge [",m^3,".",s^-1,"]",sep="")))+
+  labs(colour = "Period")+
+  scale_fill_brewer(type = "div",palette = 5,aesthetics = "color")+
+  coord_cartesian(ylim=c(8000,15000),xlim=c(9,13))+
+  ### 2003
+  geom_segment(aes(x = 11.35, xend = 11.35, y = 0, 
+                   yend = DataRC$maxpost[which(DataRC$period == 4 & DataRC$h == 11.35)]), 
+               lwd = 2, lty = 2, color = RColorBrewer::brewer.pal(10, name = "RdBu")[4])+
+  geom_segment(aes(x = 0, xend = 11.35, y = DataRC$maxpost[which(DataRC$period == 4 & DataRC$h == 11.35)], 
+                   yend = DataRC$maxpost[which(DataRC$period == 4 & DataRC$h == 11.35)]), 
+               lwd = 2, lty = 2, color = RColorBrewer::brewer.pal(10, name = "RdBu")[4])+
+  geom_text(aes(x = 9.25, y = 11700, label = "2003"),
+            col = RColorBrewer::brewer.pal(10, name = "RdBu")[4] , size = 8)+
+  ### Theme
+  theme_bw(base_size=20)+
+  theme(axis.text=element_text(size=15),axis.title=element_text(size=20,face="bold")
+        ,panel.grid.major=element_line(size=1.2),panel.grid.minor=element_line(size=0.8)
+        ,legend.text=element_text(size=15),legend.title=element_text(size=20)
+        ,legend.key.size=unit(1.5, "cm"),legend.position="right")
+
+plot.RCzoom
+ggsave(path = paste0(dir.plot.case,"SPD/"), filename = "RC_zoom.pdf", width = 16, height = 10)
+
 
 ## with IC
 IC=ggplot(DataRC)+

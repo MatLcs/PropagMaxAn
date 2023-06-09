@@ -119,6 +119,8 @@ IC_Amax = ggplot()+
 #   print(IC_Amax)
 # dev.off()
 
+
+
 Amax = ggplot()+
   scale_x_continuous(name = expression("Year"), expand=c(0,2))+
   geom_line(data = Quants, aes(x = an, y = mp), lwd = 1.2)+
@@ -134,16 +136,16 @@ ggarrange(ICreldif+theme(axis.title.x = element_blank(), axis.text.x = element_b
             , Amax,nrow = 2, common.legend = T, legend = "right", align = "v",
             heights = c(5,1))
 
-ggsave(path = dir.plots, filename = "IcAndAMAX.pdf",width = 17, height = 10)
+# ggsave(path = dir.plots, filename = "IcAndAMAX.pdf",width = 17, height = 10)
 
 ######################################
 ##### WRITING FINAL HYDRO DATA #######
 ######################################
 
   ## SPAGS
-  write.table(round(Spags,2), paste0(dir.res,"Spags_uTot_Amax.txt"),row.names = F, col.names = F)
+  # write.table(round(Spags,2), paste0(dir.res,"Spags_uTot_Amax.txt"),row.names = F, col.names = F)
   ## QUANTILES
-  write.table(round(Quants,2), paste0(dir.res,"Quantiles_Amax.txt"),row.names = F)
+  # write.table(round(Quants,2), paste0(dir.res,"Quantiles_Amax.txt"),row.names = F)
   
   
 ######################################
@@ -196,5 +198,90 @@ ggsave(path = dir.plots, filename = "IcAndAMAX.pdf",width = 17, height = 10)
   abline(v = year(Tshifts), col = "grey", lty = 2)
   
   
-
+#########################
+### Plots for reviewers
+#########################
+  poly1 = data.frame(x = c(2020-50,2020,2020,2020-50),
+                     y = c(15000,15000,15500,15500))
+  poly2 = data.frame(x = c(2020-100,2020,2020,2020-100),
+                     y = c(15600,15600,16100,16100))
+  poly3 = data.frame(x = c(2020-150,2020,2020,2020-150),
+                     y = c(16200,16200,16700,16700))
+  poly4 = data.frame(x = c(1816,2020,2020,1816),
+                     y = c(16800,16800,17300,17300))
+  IC_AmaxBandes = ggplot()+
+    scale_x_continuous(name = expression("Year"), expand=c(0,2))+
+    scale_y_continuous(name = expression(paste("Annual maximum discharge [",m^3,".",s^-1,"]",sep="")),
+                       expand=c(0.1,0))+
+    labs(x = "Time [day]", y = expression(paste("Annual maximum discharge [",m^3,".",s^-1,"]",sep=""))) +
+    theme_bw(base_size=15)+
+    geom_ribbon(data = Quants,
+                aes(x = an, ymin = tot2.5, ymax = tot97.5,#),
+                    fill= "3-Remnant uncertainty"))+  #, alpha = 0.5,show.legend = T)+
+    geom_ribbon(data = Quants,
+                aes(x = an, ymin = param2.5, ymax = param97.5,#),
+                    fill= "2-Parametric uncertainty"), alpha = 0.9)+#, show.legend = T)+
+    geom_ribbon(data = Quants,
+                aes(x = an, ymin = mp2.5, ymax = mp97.5,#),
+                    fill="1-Limnimetric uncertainty"))+#, alpha = 0.5,show.legend = T)+
+    geom_ribbon(data = Quants[which(Quants$an >= 1967 & Quants$an <= 1971),], aes(x = an, 
+                                                                                  ymin = tot2.5, ymax= tot97.5, fill = "4 - Reconstructed") )+
+    geom_line(data = Quants, aes(x = an, y = mp))+
+    geom_point(aes(x = 1816 : 2020,y = 2000,size = Njau),color='blue',alpha = 0.5)+
+    geom_vline(xintercept = year(Tshifts),show.legend = T, linetype = 2, size = 0.8, color = "lightgrey")+
+    theme(legend.position = "right")+#,legend.text = element_text(size=8))+
+    scale_fill_manual(name = element_blank(),
+                      values = c("#fec44f","#fa9fb5","#f03b20","grey"))+
     
+    geom_polygon(data = poly1, aes(x=x,y=y), fill = "#a1d76a")+
+    geom_polygon(data = poly2, aes(x=x,y=y), fill = "#a1d76a")+
+    geom_polygon(data = poly3, aes(x=x,y=y), fill = "#a1d76a")+
+    geom_polygon(data = poly4, aes(x=x,y=y), fill = "#a1d76a")+
+    geom_text(aes(x = 1995, y = 15250, label = "50 years", fontface = 2), size = 4)+
+    geom_text(aes(x = 1995, y = 15850, label = "100 years", fontface = 2), size = 4)+
+    geom_text(aes(x = 1995, y = 16450, label = "150 years", fontface = 2), size = 4)+
+    geom_text(aes(x = 1995, y = 17050, label = "205 years", fontface = 2), size = 4)+
+    theme( axis.text=element_text(size=12)
+           ,axis.title=element_text(size=14)
+           ,legend.text=element_text(size=15)
+           ,legend.title=element_text(size=15)
+           ,legend.key.size=unit(1, "cm"))+
+    scale_size_continuous(range = c(3, 15),name="Gaugings / year")+
+    coord_cartesian(ylim=c(2000,16000))
+  
+  # 
+  pdf(paste0(dir.plots,"IC_AMAX_Both_Bands.pdf"),16)
+    print(IC_AmaxBandes)
+  dev.off()
+
+### Floods w ic
+  Floods = Quants[which(Quants$mp>9000),]
+  Floods = Floods[order(Floods$mp),]
+  Floods$rank = seq_along(Floods$an)
+  Floods[13,3] = Floods[13,5]
+  
+Ggflood = ggplot(data = Floods)+
+    geom_errorbar(aes(x = rank, ymin = tot2.5, ymax = tot97.5, color = "3 - Remnant uncertainty"),# color ="#f03b20",
+                  width = 0.3, lwd = 3)+
+    geom_errorbar(aes(x = rank, ymin = param2.5, ymax = param97.5, color = "2 - Paramtric uncertainty"), #color = "#fa9fb5",
+                  width = 0, lwd = 3)+
+    geom_errorbar(aes(x = rank, ymin = mp2.5, ymax = mp97.5, color = "1 - Limnimetric uncertainty"),# color =  "#fec44f", 
+                  width = 0, lwd = 3)+
+    geom_point(aes(x = rank, y = mp, color = "4 - Maxpost"), size = 3)+
+    scale_color_manual(name = element_blank(),
+                      values = c("#fec44f","#fa9fb5","#f03b20","black"))+
+    theme_bw(base_size = 20)+
+    scale_y_continuous(name = expression(paste("Discharge [",m^3,".",s^-1,"]",sep="")),
+                       expand=c(0.1,0))+
+    scale_x_continuous(breaks = Floods$rank, labels = Floods$an, name = "Year")+
+  coord_cartesian(ylim = c(8500,14500))+
+  theme(legend.position = c(0.15, 0.89))
+
+  # ggsave(path = dir.plots, filename = "Floods9000.pdf", width = 13, height = 8)
+    
+    
+JauOld = read.csv2(paste0(dir.data,"JauBeaucaireOLD.csv"))
+  
+JauRes = read.csv2(paste0(dir.data,"JauBeaucaireCNR.csv"))
+
+JauRes[which(JauRes$Q > 9000),]

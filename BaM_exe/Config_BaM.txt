@@ -1,4 +1,4 @@
-'BaR_Res-Loc_sdb1/'
+'SPD_Res-Loc_sdb1/'
 "Config_RunOptions.txt"
 "Config_Model.txt"
 "Config_ControlMatrix.txt"
@@ -8,4 +8,4 @@
 "Config_Cooking.txt"
 "Config_Summary.txt"
 "Config_Residuals.txt"
-"Config_Pred_Master.txt"
+""
